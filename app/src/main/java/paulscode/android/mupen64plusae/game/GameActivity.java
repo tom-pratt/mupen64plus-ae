@@ -69,6 +69,8 @@ import paulscode.android.mupen64plusae.GameSidebar.GameSidebarActionHandler;
 import paulscode.android.mupen64plusae.dialog.ConfirmationDialog.PromptConfirmListener;
 import paulscode.android.mupen64plusae.dialog.Prompt;
 import paulscode.android.mupen64plusae.hack.MogaHack;
+import paulscode.android.mupen64plusae.input.AbstractController;
+import paulscode.android.mupen64plusae.input.CarController;
 import paulscode.android.mupen64plusae.input.PeripheralController;
 import paulscode.android.mupen64plusae.input.SensorController;
 import paulscode.android.mupen64plusae.input.TouchController;
@@ -146,6 +148,7 @@ public class GameActivity extends AppCompatActivity implements PromptConfirmList
     private AxisProvider mAxisProvider;
     private Controller mMogaController;
     TouchController mTouchscreenController;
+    private CarController mCarController;
     private SensorController mSensorController;
     private long mLastTouchTime;
     private Handler mHandler;
@@ -998,103 +1001,106 @@ public class GameActivity extends AppCompatActivity implements PromptConfirmList
     @Override
     public boolean onKey( View view, int keyCode, KeyEvent event )
     {
-        boolean isKeyboard = (event.getSource() & InputDevice.SOURCE_GAMEPAD) != InputDevice.SOURCE_GAMEPAD;
-        final boolean keyDown = event.getAction() == KeyEvent.ACTION_DOWN;
+        mCarController.onKey(keyCode, event);
+        return true;
 
-        boolean handled = false;
-
-        // Attempt to reconnect any disconnected devices if this is not a keyboard, we don't want to automatically
-        // map keyboards
-        if (!isKeyboard) {
-            checkForNewController(AbstractProvider.getHardwareId( event ) );
-        }
-
-        boolean isPlayer1 = mGamePrefs.playerMap.testHardware(AbstractProvider.getHardwareId( event ), 1);
-
-        if( !mDrawerLayout.isDrawerOpen( GravityCompat.START ) )
-        {
-            // If PeripheralControllers exist and handle the event,
-            // they return true. Else they return false, signaling
-            // Android to handle the event (menu button, vol keys).
-            if( mKeyProvider != null && view != null)
-            {
-                handled = mKeyProvider.onKey(view, keyCode, event);
-
-                //Don't use built in keys in the device to hide the touch controls
-                if(handled &&
-                        keyCode != KeyEvent.KEYCODE_MENU &&
-                        keyCode != KeyEvent.KEYCODE_BACK &&
-                        keyCode != KeyEvent.KEYCODE_VOLUME_UP &&
-                        keyCode != KeyEvent.KEYCODE_VOLUME_DOWN &&
-                        keyCode != KeyEvent.KEYCODE_VOLUME_MUTE &&
-                        mGlobalPrefs.touchscreenAutoHideEnabled)
-                {
-                    mOverlay.onTouchControlsHide();
-                }
-            }
-        }
-
-        //Only player 1 or keyboards can control menus
-        handled = handled || (!isPlayer1 && !isKeyboard && !mGlobalPrefs.useRaphnetDevicesIfAvailable);
-
-        if(!handled)
-        {
-            if( keyDown && keyCode == KeyEvent.KEYCODE_MENU )
-            {
-                if( mDrawerLayout.isDrawerOpen( GravityCompat.START ) )
-                {
-                    mDrawerLayout.closeDrawer( GravityCompat.START );
-                    mOverlay.requestFocus();
-                }
-                else {
-                    if(mCoreFragment != null)
-                    {
-                        mCoreFragment.pauseEmulator();
-                    }
-                    mDrawerLayout.openDrawer(GravityCompat.START);
-                    ReloadAllMenus();
-                    mDrawerOpenState = true;
-                    mGameSidebar.requestFocus();
-                    mGameSidebar.smoothScrollToPosition(0);
-                }
-                return true;
-            }
-            else if( keyDown && keyCode == KeyEvent.KEYCODE_BACK )
-            {
-                if( mDrawerLayout.isDrawerOpen( GravityCompat.START ) )
-                {
-                    mDrawerLayout.closeDrawer( GravityCompat.START );
-                    mOverlay.requestFocus();
-                }
-                else
-                {
-                    //We are using the slide gesture for the menu, so the back key can be used to exit
-                    if(mGlobalPrefs.inGameMenuIsSwipGesture)
-                    {
-                        if(mCoreFragment != null)
-                        {
-                            mCoreFragment.exit();
-                        }
-                    }
-                    //Else the back key bring up the in-game menu
-                    else
-                    {
-                        if(mCoreFragment != null)
-                        {
-                            mCoreFragment.pauseEmulator();
-                        }
-                        mDrawerLayout.openDrawer( GravityCompat.START );
-                        ReloadAllMenus();
-                        mDrawerOpenState = true;
-                        mGameSidebar.requestFocus();
-                        mGameSidebar.smoothScrollToPosition(0);
-                    }
-                }
-                return true;
-            }
-        }
-
-        return handled;
+//        boolean isKeyboard = (event.getSource() & InputDevice.SOURCE_GAMEPAD) != InputDevice.SOURCE_GAMEPAD;
+//        final boolean keyDown = event.getAction() == KeyEvent.ACTION_DOWN;
+//
+//        boolean handled = false;
+//
+//        // Attempt to reconnect any disconnected devices if this is not a keyboard, we don't want to automatically
+//        // map keyboards
+//        if (!isKeyboard) {
+//            checkForNewController(AbstractProvider.getHardwareId( event ) );
+//        }
+//
+//        boolean isPlayer1 = mGamePrefs.playerMap.testHardware(AbstractProvider.getHardwareId( event ), 1);
+//
+//        if( !mDrawerLayout.isDrawerOpen( GravityCompat.START ) )
+//        {
+//            // If PeripheralControllers exist and handle the event,
+//            // they return true. Else they return false, signaling
+//            // Android to handle the event (menu button, vol keys).
+//            if( mKeyProvider != null && view != null)
+//            {
+//                handled = mKeyProvider.onKey(view, keyCode, event);
+//
+//                //Don't use built in keys in the device to hide the touch controls
+//                if(handled &&
+//                        keyCode != KeyEvent.KEYCODE_MENU &&
+//                        keyCode != KeyEvent.KEYCODE_BACK &&
+//                        keyCode != KeyEvent.KEYCODE_VOLUME_UP &&
+//                        keyCode != KeyEvent.KEYCODE_VOLUME_DOWN &&
+//                        keyCode != KeyEvent.KEYCODE_VOLUME_MUTE &&
+//                        mGlobalPrefs.touchscreenAutoHideEnabled)
+//                {
+//                    mOverlay.onTouchControlsHide();
+//                }
+//            }
+//        }
+//
+//        //Only player 1 or keyboards can control menus
+//        handled = handled || (!isPlayer1 && !isKeyboard && !mGlobalPrefs.useRaphnetDevicesIfAvailable);
+//
+//        if(!handled)
+//        {
+//            if( keyDown && keyCode == KeyEvent.KEYCODE_MENU )
+//            {
+//                if( mDrawerLayout.isDrawerOpen( GravityCompat.START ) )
+//                {
+//                    mDrawerLayout.closeDrawer( GravityCompat.START );
+//                    mOverlay.requestFocus();
+//                }
+//                else {
+//                    if(mCoreFragment != null)
+//                    {
+//                        mCoreFragment.pauseEmulator();
+//                    }
+//                    mDrawerLayout.openDrawer(GravityCompat.START);
+//                    ReloadAllMenus();
+//                    mDrawerOpenState = true;
+//                    mGameSidebar.requestFocus();
+//                    mGameSidebar.smoothScrollToPosition(0);
+//                }
+//                return true;
+//            }
+//            else if( keyDown && keyCode == KeyEvent.KEYCODE_BACK )
+//            {
+//                if( mDrawerLayout.isDrawerOpen( GravityCompat.START ) )
+//                {
+//                    mDrawerLayout.closeDrawer( GravityCompat.START );
+//                    mOverlay.requestFocus();
+//                }
+//                else
+//                {
+//                    //We are using the slide gesture for the menu, so the back key can be used to exit
+//                    if(mGlobalPrefs.inGameMenuIsSwipGesture)
+//                    {
+//                        if(mCoreFragment != null)
+//                        {
+//                            mCoreFragment.exit();
+//                        }
+//                    }
+//                    //Else the back key bring up the in-game menu
+//                    else
+//                    {
+//                        if(mCoreFragment != null)
+//                        {
+//                            mCoreFragment.pauseEmulator();
+//                        }
+//                        mDrawerLayout.openDrawer( GravityCompat.START );
+//                        ReloadAllMenus();
+//                        mDrawerOpenState = true;
+//                        mGameSidebar.requestFocus();
+//                        mGameSidebar.smoothScrollToPosition(0);
+//                    }
+//                }
+//                return true;
+//            }
+//        }
+//
+//        return handled;
     }
 
     @SuppressLint( "InlinedApi" )
@@ -1117,6 +1123,8 @@ public class GameActivity extends AppCompatActivity implements PromptConfirmList
                     mOverlay.onSensorEnabled(true);
                 }
             }
+
+            mCarController = new CarController(mCoreFragment);
 
             // Create the touchscreen controller
             mTouchscreenController = new TouchController(mCoreFragment, mTouchscreenMap,
