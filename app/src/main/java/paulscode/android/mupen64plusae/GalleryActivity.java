@@ -28,29 +28,29 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.ThumbnailUtils;
 import android.os.Bundle;
-
-import androidx.core.content.pm.ShortcutInfoCompat;
-import androidx.core.content.pm.ShortcutManagerCompat;
-import androidx.core.graphics.drawable.IconCompat;
-import androidx.fragment.app.FragmentManager;
-import androidx.core.view.GravityCompat;
-import androidx.drawerlayout.widget.DrawerLayout;
-import androidx.appcompat.app.ActionBarDrawerToggle;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.appcompat.widget.SearchView;
-import androidx.appcompat.widget.SearchView.OnQueryTextListener;
-import androidx.appcompat.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MenuItem.OnActionExpandListener;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
-import android.view.MenuItem.OnActionExpandListener;
+
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SearchView;
+import androidx.appcompat.widget.SearchView.OnQueryTextListener;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.pm.ShortcutInfoCompat;
+import androidx.core.content.pm.ShortcutManagerCompat;
+import androidx.core.graphics.drawable.IconCompat;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.FragmentManager;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.mupen64plusae.v3.alpha.R;
 
@@ -63,6 +63,7 @@ import paulscode.android.mupen64plusae.GameSidebar.GameSidebarActionHandler;
 import paulscode.android.mupen64plusae.dialog.ConfirmationDialog;
 import paulscode.android.mupen64plusae.dialog.ConfirmationDialog.PromptConfirmListener;
 import paulscode.android.mupen64plusae.dialog.Popups;
+import paulscode.android.mupen64plusae.input.CarController;
 import paulscode.android.mupen64plusae.jni.CoreService;
 import paulscode.android.mupen64plusae.persistent.AppData;
 import paulscode.android.mupen64plusae.persistent.ConfigFile;
@@ -80,9 +81,23 @@ import paulscode.android.mupen64plusae.util.Notifier;
 import paulscode.android.mupen64plusae.util.RomDatabase;
 import paulscode.android.mupen64plusae.util.RomHeader;
 
+import static com.volvocars.clusterinterface.ClusterConstants.ACTION_CLUSTER_EVENT;
+import static com.volvocars.clusterinterface.ClusterConstants.BUTTON_PRESS_TYPE_DOWN;
+import static com.volvocars.clusterinterface.ClusterConstants.BUTTON_PRESS_TYPE_UP;
+import static com.volvocars.clusterinterface.ClusterConstants.EVENT_DOWN;
+import static com.volvocars.clusterinterface.ClusterConstants.EVENT_LEFT;
+import static com.volvocars.clusterinterface.ClusterConstants.EVENT_RIGHT;
+import static com.volvocars.clusterinterface.ClusterConstants.EVENT_UP;
+import static com.volvocars.clusterinterface.ClusterConstants.EXTRA_BUTTON_CODE;
+import static com.volvocars.clusterinterface.ClusterConstants.EXTRA_BUTTON_PRESS_TYPE;
+import static paulscode.android.mupen64plusae.input.AbstractController.START;
+
 public class GalleryActivity extends AppCompatActivity implements GameSidebarActionHandler, PromptConfirmListener,
         GalleryRefreshFinishedListener
 {
+
+
+
     // Saved instance states
     private static final String STATE_QUERY = "STATE_QUERY";
     private static final String STATE_SIDEBAR = "STATE_SIDEBAR";
@@ -205,6 +220,8 @@ public class GalleryActivity extends AppCompatActivity implements GameSidebarAct
             sendBroadcast(intent);
         }
     }
+
+
 
     @Override
     protected void onNewIntent( Intent intent )
@@ -734,7 +751,14 @@ public class GalleryActivity extends AppCompatActivity implements GameSidebarAct
                         item.zipFile == null ? null : item.zipFile.getAbsolutePath(),
                         item.md5, item.crc,
                         item.headerName, item.countryCode.getValue(), item.artPath,
-                        item.goodName, item.displayName, true );
+                        item.goodName, item.displayName, true);
+                break;
+            case R.id.menuItem_startCluster:
+                launchGameActivity( item.romFile.getAbsolutePath(),
+                        item.zipFile == null ? null : item.zipFile.getAbsolutePath(),
+                        item.md5, item.crc,
+                        item.headerName, item.countryCode.getValue(), item.artPath,
+                        item.goodName, item.displayName, true , true);
                 break;
             case R.id.menuItem_settings:
             {
@@ -870,24 +894,23 @@ public class GalleryActivity extends AppCompatActivity implements GameSidebarAct
     }
 
     @Override
+
     public boolean onKeyDown( int keyCode, KeyEvent event )
     {
-        if( keyCode == KeyEvent.KEYCODE_MENU )
-        {
-            // Show the navigation drawer when the user presses the Menu button
-            // http://stackoverflow.com/q/22220275
-            if( mDrawerLayout.isDrawerOpen( GravityCompat.START ) )
-            {
-                mDrawerLayout.closeDrawer( GravityCompat.START );
-            }
-            else
-            {
-                mDrawerLayout.openDrawer( GravityCompat.START );
-            }
-            return true;
-        }
+        Log.d("MARIOKART", "Gallery activity onkeydown");
 
-        return super.onKeyDown( keyCode, event );
+        CarController.keyDown(getApplicationContext(), keyCode);
+
+        return true;
+    }
+
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        Log.d("MARIOKART", "Gallery activity onkeyup");
+
+        CarController.keyUp(getApplicationContext(), keyCode);
+
+        return true;
     }
 
     @Override
@@ -1052,8 +1075,14 @@ public class GalleryActivity extends AppCompatActivity implements GameSidebarAct
     }
 
     public void launchGameActivity( String romPath, String zipPath, String romMd5, String romCrc,
+                                    String romHeaderName, byte romCountryCode, String romArtPath, String romGoodName, String romDisplayName,
+                                    boolean isRestarting) {
+        launchGameActivity(romPath, zipPath, romMd5, romCrc, romHeaderName, romCountryCode, romArtPath, romGoodName, romDisplayName, isRestarting, false);
+    }
+
+    public void launchGameActivity( String romPath, String zipPath, String romMd5, String romCrc,
             String romHeaderName, byte romCountryCode, String romArtPath, String romGoodName, String romDisplayName,
-            boolean isRestarting)
+            boolean isRestarting, boolean startInDim)
     {
         Log.i( "GalleryActivity", "launchGameActivity" );
 
@@ -1117,7 +1146,7 @@ public class GalleryActivity extends AppCompatActivity implements GameSidebarAct
         {
             // Launch the game activity
             ActivityHelper.startGameActivity(this, romPath, romMd5, romCrc, romHeaderName, romCountryCode,
-                    romArtPath, romGoodName, romDisplayName, romLegacySaveFileName, isRestarting);
+                    romArtPath, romGoodName, romDisplayName, romLegacySaveFileName, isRestarting, startInDim);
         }
         else
         {

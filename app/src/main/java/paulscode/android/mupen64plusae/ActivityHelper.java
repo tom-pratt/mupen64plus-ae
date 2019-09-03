@@ -24,13 +24,18 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.ActivityNotFoundException;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.os.RemoteException;
 import android.text.TextUtils;
 import android.util.Log;
+
+import com.volvocars.clusterinterface.IClusterRenderingService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,6 +65,8 @@ import paulscode.android.mupen64plusae.task.ExtractTexturesService;
 import paulscode.android.mupen64plusae.util.LogcatActivity;
 
 import static android.content.Context.ACTIVITY_SERVICE;
+import static com.volvocars.clusterinterface.ClusterConstants.LOCAL_BINDING_ACTION;
+import static com.volvocars.clusterinterface.ClusterConstants.SERVICE_COMPONENT;
 import static paulscode.android.mupen64plusae.GalleryActivity.KEY_IS_LEANBACK;
 
 /**
@@ -209,27 +216,76 @@ public class ActivityHelper
         }
     }
 
-    static void startGameActivity(Activity activity, String romPath, String romMd5, String romCrc,
-                                  String romHeaderName, byte romCountryCode, String romArtPath, String romGoodName, String romDisplayName,
-                                  String romLegacySave, boolean doRestart) {
-        Intent intent = new Intent(activity, GameActivity.class);
-        intent.putExtra( ActivityHelper.Keys.ROM_PATH, romPath );
-        intent.putExtra( ActivityHelper.Keys.ROM_MD5, romMd5 );
-        intent.putExtra( ActivityHelper.Keys.ROM_CRC, romCrc );
-        intent.putExtra( ActivityHelper.Keys.ROM_HEADER_NAME, romHeaderName );
-        intent.putExtra( ActivityHelper.Keys.ROM_COUNTRY_CODE, romCountryCode );
-        intent.putExtra( ActivityHelper.Keys.ROM_ART_PATH, romArtPath );
-        intent.putExtra( ActivityHelper.Keys.ROM_GOOD_NAME, romGoodName );
-        intent.putExtra( ActivityHelper.Keys.ROM_DISPLAY_NAME, romDisplayName );
-        intent.putExtra( ActivityHelper.Keys.ROM_LEGACY_SAVE, romLegacySave );
-        intent.putExtra( ActivityHelper.Keys.DO_RESTART, doRestart );
-        activity.startActivityForResult(intent, GAME_ACTIVITY_CODE);
+    static void startGameActivity(final Activity activity, final String romPath, final String romMd5, final String romCrc,
+                                  final String romHeaderName, final byte romCountryCode, final String romArtPath, final String romGoodName, final String romDisplayName,
+                                  final String romLegacySave, final boolean doRestart) {
+        startGameActivity(activity, romPath, romMd5, romCrc, romHeaderName, romCountryCode, romArtPath, romGoodName, romDisplayName, romLegacySave, doRestart, false);
+    }
+
+    static void startGameActivity(final Activity activity, final String romPath, final String romMd5, final String romCrc,
+                                  final String romHeaderName, final byte romCountryCode, final String romArtPath, final String romGoodName, final String romDisplayName,
+                                  final String romLegacySave, final boolean doRestart, boolean startInDim) {
+        if (startInDim) {
+            ServiceConnection serviceConnection = new ServiceConnection() {
+                @Override
+                public void onServiceConnected(ComponentName name, IBinder service) {
+                    IClusterRenderingService clusterService = IClusterRenderingService.Stub.asInterface(service);
+                    try {
+                        Bundle options = clusterService.getClusterActivityOptions();
+                        if (options != null) {
+                            Log.d("MARIOKART", "start game for result");
+                            Intent intent = new Intent(activity, GameActivity.class);
+                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            intent.putExtra(ActivityHelper.Keys.ROM_PATH, romPath);
+                            intent.putExtra(ActivityHelper.Keys.ROM_MD5, romMd5);
+                            intent.putExtra(ActivityHelper.Keys.ROM_CRC, romCrc);
+                            intent.putExtra(ActivityHelper.Keys.ROM_HEADER_NAME, romHeaderName);
+                            intent.putExtra(ActivityHelper.Keys.ROM_COUNTRY_CODE, romCountryCode);
+                            intent.putExtra(ActivityHelper.Keys.ROM_ART_PATH, romArtPath);
+                            intent.putExtra(ActivityHelper.Keys.ROM_GOOD_NAME, romGoodName);
+                            intent.putExtra(ActivityHelper.Keys.ROM_DISPLAY_NAME, romDisplayName);
+                            intent.putExtra(ActivityHelper.Keys.ROM_LEGACY_SAVE, romLegacySave);
+                            intent.putExtra(ActivityHelper.Keys.DO_RESTART, doRestart);
+                            activity.startActivityForResult(intent, GAME_ACTIVITY_CODE, options);
+                        }
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
+
+                }
+
+                @Override
+                public void onServiceDisconnected(ComponentName name) {
+
+                }
+            };
+
+            Intent intent = new Intent();
+            intent.setComponent(SERVICE_COMPONENT);
+            intent.setAction(LOCAL_BINDING_ACTION);
+            activity.bindService(intent, serviceConnection, 0);
+        } else {
+            Intent intent = new Intent( activity, GameActivity.class );
+            intent.putExtra( ActivityHelper.Keys.ROM_PATH, romPath );
+            intent.putExtra( ActivityHelper.Keys.ROM_MD5, romMd5 );
+            intent.putExtra( ActivityHelper.Keys.ROM_CRC, romCrc );
+            intent.putExtra( ActivityHelper.Keys.ROM_HEADER_NAME, romHeaderName );
+            intent.putExtra( ActivityHelper.Keys.ROM_COUNTRY_CODE, romCountryCode );
+            intent.putExtra( ActivityHelper.Keys.ROM_ART_PATH, romArtPath );
+            intent.putExtra( ActivityHelper.Keys.ROM_GOOD_NAME, romGoodName );
+            intent.putExtra( ActivityHelper.Keys.ROM_DISPLAY_NAME, romDisplayName );
+            intent.putExtra( ActivityHelper.Keys.ROM_LEGACY_SAVE, romLegacySave );
+            intent.putExtra( ActivityHelper.Keys.DO_RESTART, doRestart );
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            activity.startActivity( intent );
+        }
     }
 
     public static void startGameActivity( Context context, String romPath, String romMd5, String romCrc,
          String romHeaderName, byte romCountryCode, String romArtPath, String romGoodName, String romDisplayName,
          String romLegacySave, boolean doRestart)
     {
+        Log.d("MARIOKART", "start game ");
         Intent intent = new Intent( context, GameActivity.class );
         intent.putExtra( ActivityHelper.Keys.ROM_PATH, romPath );
         intent.putExtra( ActivityHelper.Keys.ROM_MD5, romMd5 );
