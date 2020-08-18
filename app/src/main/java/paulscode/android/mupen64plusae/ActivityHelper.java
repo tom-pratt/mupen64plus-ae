@@ -24,13 +24,18 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.ActivityNotFoundException;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.os.RemoteException;
 import android.text.TextUtils;
 import android.util.Log;
+
+import com.volvocars.clusterinterface.IClusterRenderingService;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -62,6 +67,8 @@ import paulscode.android.mupen64plusae.task.ExtractTexturesService;
 import paulscode.android.mupen64plusae.util.LogcatActivity;
 
 import static android.content.Context.ACTIVITY_SERVICE;
+import static com.volvocars.clusterinterface.ClusterConstants.LOCAL_BINDING_ACTION;
+import static com.volvocars.clusterinterface.ClusterConstants.SERVICE_COMPONENT;
 
 /**
  * Utility class that encapsulates and standardizes interactions between activities.
@@ -197,40 +204,59 @@ public class ActivityHelper
         }
     }
 
-    static void startGameActivity(Activity activity, String romPath, String zipPath, String romMd5, String romCrc,
-                                  String romHeaderName, byte romCountryCode, String romArtPath, String romGoodName, String romDisplayName,
-                                  boolean doRestart) {
-        Intent intent = new Intent(activity, GameActivity.class);
-        intent.putExtra( ActivityHelper.Keys.ROM_PATH, romPath );
-        intent.putExtra( ActivityHelper.Keys.ZIP_PATH, zipPath );
-        intent.putExtra( ActivityHelper.Keys.ROM_MD5, romMd5 );
-        intent.putExtra( ActivityHelper.Keys.ROM_CRC, romCrc );
-        intent.putExtra( ActivityHelper.Keys.ROM_HEADER_NAME, romHeaderName );
-        intent.putExtra( ActivityHelper.Keys.ROM_COUNTRY_CODE, romCountryCode );
-        intent.putExtra( ActivityHelper.Keys.ROM_ART_PATH, romArtPath );
-        intent.putExtra( ActivityHelper.Keys.ROM_GOOD_NAME, romGoodName );
-        intent.putExtra( ActivityHelper.Keys.ROM_DISPLAY_NAME, romDisplayName );
-        intent.putExtra( ActivityHelper.Keys.DO_RESTART, doRestart );
-        activity.startActivityForResult(intent, GAME_ACTIVITY_CODE);
+    public static void startGameActivity( Context context, String romPath, String zipPath, String romMd5, String romCrc,
+                                          String romHeaderName, byte romCountryCode, String romArtPath, String romGoodName, String romDisplayName,
+                                          boolean doRestart) {
+        startGameActivity(context, romPath, zipPath, romMd5, romCrc, romHeaderName, romCountryCode, romArtPath, romGoodName, romDisplayName, doRestart, false);
     }
 
     public static void startGameActivity( Context context, String romPath, String zipPath, String romMd5, String romCrc,
          String romHeaderName, byte romCountryCode, String romArtPath, String romGoodName, String romDisplayName,
-         boolean doRestart)
+         boolean doRestart, boolean startInCluster)
     {
-        Intent intent = new Intent( context, GameActivity.class );
-        intent.putExtra( ActivityHelper.Keys.ROM_PATH, romPath );
-        intent.putExtra( ActivityHelper.Keys.ZIP_PATH, zipPath );
-        intent.putExtra( ActivityHelper.Keys.ROM_MD5, romMd5 );
-        intent.putExtra( ActivityHelper.Keys.ROM_CRC, romCrc );
-        intent.putExtra( ActivityHelper.Keys.ROM_HEADER_NAME, romHeaderName );
-        intent.putExtra( ActivityHelper.Keys.ROM_COUNTRY_CODE, romCountryCode );
-        intent.putExtra( ActivityHelper.Keys.ROM_ART_PATH, romArtPath );
-        intent.putExtra( ActivityHelper.Keys.ROM_GOOD_NAME, romGoodName );
-        intent.putExtra( ActivityHelper.Keys.ROM_DISPLAY_NAME, romDisplayName );
-        intent.putExtra( ActivityHelper.Keys.DO_RESTART, doRestart );
+        Intent intent = new Intent(context, GameActivity.class);
+        intent.putExtra(ActivityHelper.Keys.ROM_PATH, romPath);
+        intent.putExtra(ActivityHelper.Keys.ZIP_PATH, zipPath);
+        intent.putExtra(ActivityHelper.Keys.ROM_MD5, romMd5);
+        intent.putExtra(ActivityHelper.Keys.ROM_CRC, romCrc);
+        intent.putExtra(ActivityHelper.Keys.ROM_HEADER_NAME, romHeaderName);
+        intent.putExtra(ActivityHelper.Keys.ROM_COUNTRY_CODE, romCountryCode);
+        intent.putExtra(ActivityHelper.Keys.ROM_ART_PATH, romArtPath);
+        intent.putExtra(ActivityHelper.Keys.ROM_GOOD_NAME, romGoodName);
+        intent.putExtra(ActivityHelper.Keys.ROM_DISPLAY_NAME, romDisplayName);
+        intent.putExtra(ActivityHelper.Keys.DO_RESTART, doRestart);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        context.startActivity( intent );
+
+        if (startInCluster) {
+            ServiceConnection serviceConnection = new ServiceConnection() {
+                @Override
+                public void onServiceConnected(ComponentName name, IBinder service) {
+                    IClusterRenderingService clusterService = IClusterRenderingService.Stub.asInterface(service);
+                    try {
+                        Bundle options = clusterService.getClusterActivityOptions();
+                        if (options != null) {
+                            Log.d("MARIOKART", "start game for result");
+                            context.startActivity(intent, options);
+                        }
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                @Override
+                public void onServiceDisconnected(ComponentName name) {
+
+                }
+            };
+
+            Intent clusterIntent = new Intent();
+            clusterIntent.setComponent(SERVICE_COMPONENT);
+            clusterIntent.setAction(LOCAL_BINDING_ACTION);
+            context.bindService(clusterIntent, serviceConnection, 0);
+        } else {
+            Log.d("MARIOKART", "start game ");
+            context.startActivity(intent);
+        }
     }
     
     static void startAudioPrefsActivity( Context context )

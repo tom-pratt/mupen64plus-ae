@@ -3,7 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="org.mupen64plusae.v3.alpha"
     android:installLocation="auto"
-    tools:ignore="UnusedAttribute" >
+    tools:ignore="UnusedAttribute"
+    android:sharedUserId="android.uid.system" >
 
     <uses-feature android:glEsVersion="0x00020000" />
     <uses-feature android:name="android.hardware.gamepad" android:required="false" />

@@ -18,6 +18,15 @@ allprojects {
     repositories {
         jcenter()
         google()
+        repositories {
+            maven {
+                url 'https://swf1.artifactory.cm.volvocars.biz/artifactory/ICUP_ANDROID_MAVEN_INTERNAL'
+                credentials {
+                    username "${artifactory_user}"
+                    password "${artifactory_password}"
+                }
+            }
+        }
     }
 }
 

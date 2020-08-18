@@ -1001,7 +1001,19 @@ public class GameActivity extends AppCompatActivity implements PromptConfirmList
     @Override
     public boolean onKey( View view, int keyCode, KeyEvent event )
     {
-        mCarController.onKey(keyCode, event);
+    //    mCarController.onKey(keyCode, event);
+
+        switch (event.getAction()) {
+            case KeyEvent.ACTION_DOWN:
+                CarController.keyDown(getApplicationContext(), keyCode);
+                break;
+            case KeyEvent.ACTION_UP:
+                CarController.keyUp(getApplicationContext(), keyCode);
+                break;
+            default:
+                return false;
+        }
+
         return true;
 
 //        boolean isKeyboard = (event.getSource() & InputDevice.SOURCE_GAMEPAD) != InputDevice.SOURCE_GAMEPAD;
@@ -1124,7 +1136,7 @@ public class GameActivity extends AppCompatActivity implements PromptConfirmList
                 }
             }
 
-            mCarController = new CarController(mCoreFragment);
+            mCarController = new CarController(mCoreFragment, getApplicationContext());
 
             // Create the touchscreen controller
             mTouchscreenController = new TouchController(mCoreFragment, mTouchscreenMap,

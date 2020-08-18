@@ -12,6 +12,11 @@
         android:title="@string/actionStart_title"
         android:titleCondensed="@string/actionStart_summary"/>
     <item
+        android:id="@+id/menuItem_startCluster"
+        android:icon="@drawable/ic_undo"
+        android:title="@string/actionStart_title"
+        android:titleCondensed="Start in DIM"/>
+    <item
         android:id="@+id/menuItem_settings"
         android:icon="@drawable/ic_settings"
         android:title="@string/menuItem_settings"/>

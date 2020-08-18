@@ -24,6 +24,14 @@ android {
     defaultConfig {
         applicationId = "org.mupen64plusae.v3.alpha"
     }
+    signingConfigs {
+        platform {
+            storeFile file("../platform.keystore")
+            storePassword 'android'
+            keyAlias 'platform'
+            keyPassword 'android'
+        }
+    }
     buildTypes {
         release {
             minifyEnabled true
@@ -34,6 +42,7 @@ android {
             jniDebuggable true
             applicationIdSuffix ".debug"
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.platform
         }
     }
 
@@ -101,5 +110,8 @@ dependencies {
     implementation project(':mupen64plus-input-raphnet')
     implementation project(':mupen64plus-video-rice')
     implementation project(':mupen64plus-video-angrylion-plus')
+    implementation project(':clusterinterface')
+
+    implementation 'com.volvocars.artinf.sdk:singleuserutil:1.0-master-SNAPSHOT'
 }
 
