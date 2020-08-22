@@ -4,9 +4,18 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.util.Log;
 import android.view.KeyEvent;
 
+import androidx.annotation.NonNull;
+
+import com.volvocars.autosar.ElementUtils;
+import com.volvocars.autosar.signals.elements.PinionSteerAg1_info;
+import com.volvocars.autosar.signals.elements.datatype.PinionSteerAg1Rec;
+
 import paulscode.android.mupen64plusae.jni.CoreFragment;
+import paulscode.android.mupen64plusae.signalsmanager.SignalsManager;
+import paulscode.android.mupen64plusae.signalsmanager.SignalsManagerImpl;
 
 public class CarController extends AbstractController {
     private static final String ACTION_CLUSTER_EVENT = "com.volvocars.clusterservice.ACTION_CLUSTER_EVENT";
@@ -30,6 +39,11 @@ public class CarController extends AbstractController {
         intentFilter.addAction(ACTION_CLUSTER_EVENT);
 
         context.registerReceiver(receiver, intentFilter);
+
+        SignalsManager signalsManager = SignalsManager.create();
+        signalsManager.subscribe(PinionSteerAg1_info.class, steeringPosition -> Log.d("PINION", "pinion changed"));
+
+
     }
 
     private final BroadcastReceiver receiver = new BroadcastReceiver() {

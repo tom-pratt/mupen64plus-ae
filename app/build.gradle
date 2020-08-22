@@ -38,7 +38,7 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
         debug {
-            minifyEnabled true
+            minifyEnabled false
             jniDebuggable true
             applicationIdSuffix ".debug"
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
@@ -112,6 +112,9 @@ dependencies {
     implementation project(':mupen64plus-video-angrylion-plus')
     implementation project(':clusterinterface')
 
+    implementation project(path: ':aosplibs', configuration: 'shadow')
     implementation 'com.volvocars.artinf.sdk:singleuserutil:1.0-master-SNAPSHOT'
+    implementation 'com.volvocars.artinf.sdk:autosar-signals-lib:1.0-SNAPSHOT'
+    implementation 'com.google.code.gson:gson:2.8.5'
 }
 
