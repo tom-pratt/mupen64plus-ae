@@ -539,6 +539,8 @@ public class GameActivity extends AppCompatActivity implements PromptConfirmList
 
         super.onDestroy();
 
+        mCarController.destroy();
+
         if(mCoreFragment != null)
         {
             mCoreFragment.clearOnFpsChangedListener();

@@ -5,4 +5,5 @@ dependencies {
     api 'com.volvocars.artinf.sdk:hwbinder:1.0-master-SNAPSHOT'
     api 'com.volvocars.artinf.sdk:vendor.volvocars.hardware.signals-V1.0:1.0-master-SNAPSHOT'
     api 'com.volvocars.artinf.sdk:vendor.volvocars.hardware.vehiclehal-V1.0:1.0-master-SNAPSHOT'
+    api 'com.volvocars.artinf.sdk:vendor.aptiv.hardware.hisip-V1.0:1.0-master-SNAPSHOT'
 }

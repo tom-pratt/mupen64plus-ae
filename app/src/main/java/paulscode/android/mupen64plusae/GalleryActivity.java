@@ -91,17 +91,6 @@ import paulscode.android.mupen64plusae.util.Notifier;
 import paulscode.android.mupen64plusae.util.RomDatabase;
 import paulscode.android.mupen64plusae.util.RomHeader;
 
-import static com.volvocars.clusterinterface.ClusterConstants.ACTION_CLUSTER_EVENT;
-import static com.volvocars.clusterinterface.ClusterConstants.BUTTON_PRESS_TYPE_DOWN;
-import static com.volvocars.clusterinterface.ClusterConstants.BUTTON_PRESS_TYPE_UP;
-import static com.volvocars.clusterinterface.ClusterConstants.EVENT_DOWN;
-import static com.volvocars.clusterinterface.ClusterConstants.EVENT_LEFT;
-import static com.volvocars.clusterinterface.ClusterConstants.EVENT_RIGHT;
-import static com.volvocars.clusterinterface.ClusterConstants.EVENT_UP;
-import static com.volvocars.clusterinterface.ClusterConstants.EXTRA_BUTTON_CODE;
-import static com.volvocars.clusterinterface.ClusterConstants.EXTRA_BUTTON_PRESS_TYPE;
-import static paulscode.android.mupen64plusae.input.AbstractController.START;
-
 public class GalleryActivity extends AppCompatActivity implements GameSidebarActionHandler, PromptConfirmListener,
         GalleryRefreshFinishedListener
 {

@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.RemoteException;
 import android.util.Log;
 import android.view.KeyEvent;
 
@@ -13,9 +14,14 @@ import com.volvocars.autosar.ElementUtils;
 import com.volvocars.autosar.signals.elements.PinionSteerAg1_info;
 import com.volvocars.autosar.signals.elements.datatype.PinionSteerAg1Rec;
 
+import java.util.ArrayList;
+
 import paulscode.android.mupen64plusae.jni.CoreFragment;
 import paulscode.android.mupen64plusae.signalsmanager.SignalsManager;
 import paulscode.android.mupen64plusae.signalsmanager.SignalsManagerImpl;
+import vendor.aptiv.hardware.hisip.V1_0.HisipMessageHidl;
+import vendor.aptiv.hardware.hisip.V1_0.IHisip;
+import vendor.aptiv.hardware.hisip.V1_0.IHisipListener;
 
 public class CarController extends AbstractController {
     private static final String ACTION_CLUSTER_EVENT = "com.volvocars.clusterservice.ACTION_CLUSTER_EVENT";
@@ -31,20 +37,69 @@ public class CarController extends AbstractController {
     private static final int EVENT_LEFT = 60;
     private static final int EVENT_RIGHT = 70;
 
+    private final Context context;
+    private final IHisip hisip;
+
     private boolean isAButtonPressed = false;
 
     public CarController(CoreFragment coreFragment, Context context) {
         super(coreFragment);
+        this.context = context;
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(ACTION_CLUSTER_EVENT);
 
         context.registerReceiver(receiver, intentFilter);
 
-        SignalsManager signalsManager = SignalsManager.create();
-        signalsManager.subscribe(PinionSteerAg1_info.class, steeringPosition -> Log.d("PINION", "pinion changed"));
-
-
+        try {
+            hisip = IHisip.getService();
+            ArrayList<Byte> ids = new ArrayList<>();
+            ids.add((byte) 0x74);
+            hisip.addListener(CarController.class.getName(), hisipListener, ids);
+        } catch (RemoteException e) {
+            throw new RuntimeException("Could not connect to IHisip");
+        }
     }
+
+    public void destroy() {
+        context.unregisterReceiver(receiver);
+        try {
+            hisip.removeListener(CarController.class.getName());
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private final IHisipListener hisipListener = new IHisipListener.Stub() {
+        private final byte signBitMask = (byte) 0xc0;
+        private final int beginPos = 5;
+
+        @Override
+        public void onMessageFromVip(HisipMessageHidl message) {
+            if (message.functionId == (byte)0x09) {
+                int rawValue = ((message.data.get(beginPos + 1) & ~signBitMask) * 256) + message.data.get(beginPos);
+                boolean negative = (message.data.get(beginPos + 1) & signBitMask) != 0;
+                double value = 0.0009765625 * rawValue;
+                if (negative) {
+                    value = value - 16;
+                }
+
+                float inputValue = (float) - root(2*value, 3) * 0.6f;
+
+                inputValue -= 0.05f;
+
+                if (Math.abs(inputValue) < 0.25f) {
+                    inputValue = 0;
+                } else {
+                    inputValue += (inputValue > 0 ? -1f : 1f) * 0.1f;
+                }
+
+
+                mState.axisFractionX = inputValue;
+                notifyChanged(false);
+                Log.d("Tom", (negative ? "negative " : "postitive") + " --- " + "rvalueRadios:" + inputValue);
+            }
+        }
+    };
 
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
@@ -75,33 +130,35 @@ public class CarController extends AbstractController {
                     }
                     break;
                 case EVENT_UP:
-                    switch (buttonPressType) {
-                        case BUTTON_PRESS_TYPE_DOWN:
-                            mState.axisFractionY = 0.9f;
-                            break;
-                        case BUTTON_PRESS_TYPE_UP:
-                            mState.axisFractionY = 0f;
-                            break;
-                    }
+                    pressButton(buttonPressType, BTN_A);
+//                    switch (buttonPressType) {
+//                        case BUTTON_PRESS_TYPE_DOWN:
+//                            mState.axisFractionY = 0.9f;
+//                            break;
+//                        case BUTTON_PRESS_TYPE_UP:
+//                            mState.axisFractionY = 0f;
+//                            break;
+//                    }
                     break;
                 case EVENT_DOWN:
-                    switch (buttonPressType) {
-                        case BUTTON_PRESS_TYPE_DOWN:
-                            mState.axisFractionY = -0.9f;
-                            break;
-                        case BUTTON_PRESS_TYPE_UP:
-                            mState.axisFractionY = 0f;
-                            break;
-                    }
+                    pressButton(buttonPressType, BTN_Z);
+//                    switch (buttonPressType) {
+//                        case BUTTON_PRESS_TYPE_DOWN:
+//                            mState.axisFractionY = -0.9f;
+//                            break;
+//                        case BUTTON_PRESS_TYPE_UP:
+//                            mState.axisFractionY = 0f;
+//                            break;
+//                    }
                     break;
 
                 // Buttons
-                case BTN_A:
-                    if (buttonPressType.equals(BUTTON_PRESS_TYPE_UP)) {
-                        isAButtonPressed = !isAButtonPressed;
-                        mState.buttons[BTN_A] = isAButtonPressed;
-                    }
-                    break;
+//                case BTN_A:
+//                    if (buttonPressType.equals(BUTTON_PRESS_TYPE_UP)) {
+//                        isAButtonPressed = !isAButtonPressed;
+//                        mState.buttons[BTN_A] = isAButtonPressed;
+//                    }
+//                    break;
                 default:
                     pressButton(buttonPressType, buttonCode);
                     break;
@@ -162,5 +219,12 @@ public class CarController extends AbstractController {
                 mState.buttons[buttonIndex] = false;
                 break;
         }
+    }
+
+    public static double root(double num, double root) {
+        if (num < 0) {
+            return -Math.pow(Math.abs(num), (1 / root));
+        }
+        return Math.pow(num, 1.0 / root);
     }
 }
