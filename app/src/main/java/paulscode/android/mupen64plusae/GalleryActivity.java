@@ -75,6 +75,7 @@ import paulscode.android.mupen64plusae.dialog.ConfirmationDialog;
 import paulscode.android.mupen64plusae.dialog.ConfirmationDialog.PromptConfirmListener;
 import paulscode.android.mupen64plusae.dialog.Popups;
 import paulscode.android.mupen64plusae.input.CarController;
+import paulscode.android.mupen64plusae.input.GalleryControlsViewHolder;
 import paulscode.android.mupen64plusae.jni.CoreService;
 import paulscode.android.mupen64plusae.persistent.AppData;
 import paulscode.android.mupen64plusae.persistent.ConfigFile;
@@ -267,6 +268,9 @@ public class GalleryActivity extends AppCompatActivity implements GameSidebarAct
 
         // Lay out the content
         setContentView( R.layout.gallery_activity );
+
+        new GalleryControlsViewHolder(findViewById(R.id.gallery_controls), this);
+
         mGridView = findViewById( R.id.gridview );
 
         FloatingActionButton floatingActionButton = findViewById(R.id.menuItem_refreshRoms);

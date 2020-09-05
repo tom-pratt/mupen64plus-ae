@@ -1138,7 +1138,7 @@ public class GameActivity extends AppCompatActivity implements PromptConfirmList
                 }
             }
 
-            mCarController = new CarController(mCoreFragment, getApplicationContext());
+            mCarController = new CarController(this, mCoreFragment, getApplicationContext());
 
             // Create the touchscreen controller
             mTouchscreenController = new TouchController(mCoreFragment, mTouchscreenMap,

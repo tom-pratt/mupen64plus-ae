@@ -41,6 +41,13 @@
             android:paddingRight="10dp"
             />
 
+        <include
+            android:id="@+id/gallery_controls"
+            layout="@layout/gallery_controls"
+            android:layout_width="match_parent"
+            android:layout_height="400dp"
+            android:layout_gravity="bottom" />
+
         <ImageView
             android:id="@+id/gallery_empty_icon"
             android:layout_width="wrap_content"

@@ -24,4 +24,5 @@ public class ClusterConstants {
     public static final int EVENT_DOWN = 50;
     public static final int EVENT_LEFT = 60;
     public static final int EVENT_RIGHT = 70;
+    public static final int EVENT_STOP = 80;
 }

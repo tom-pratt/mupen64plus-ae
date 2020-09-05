@@ -16,12 +16,15 @@ import com.volvocars.autosar.signals.elements.datatype.PinionSteerAg1Rec;
 
 import java.util.ArrayList;
 
+import paulscode.android.mupen64plusae.game.GameActivity;
 import paulscode.android.mupen64plusae.jni.CoreFragment;
 import paulscode.android.mupen64plusae.signalsmanager.SignalsManager;
 import paulscode.android.mupen64plusae.signalsmanager.SignalsManagerImpl;
 import vendor.aptiv.hardware.hisip.V1_0.HisipMessageHidl;
 import vendor.aptiv.hardware.hisip.V1_0.IHisip;
 import vendor.aptiv.hardware.hisip.V1_0.IHisipListener;
+
+import static com.volvocars.clusterinterface.ClusterConstants.EVENT_STOP;
 
 public class CarController extends AbstractController {
     private static final String ACTION_CLUSTER_EVENT = "com.volvocars.clusterservice.ACTION_CLUSTER_EVENT";
@@ -37,13 +40,15 @@ public class CarController extends AbstractController {
     private static final int EVENT_LEFT = 60;
     private static final int EVENT_RIGHT = 70;
 
+    private final GameActivity gameActivity;
     private final Context context;
     private final IHisip hisip;
 
     private boolean isAButtonPressed = false;
 
-    public CarController(CoreFragment coreFragment, Context context) {
+    public CarController(GameActivity gameActivity, CoreFragment coreFragment, Context context) {
         super(coreFragment);
+        this.gameActivity = gameActivity;
         this.context = context;
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(ACTION_CLUSTER_EVENT);
@@ -150,6 +155,9 @@ public class CarController extends AbstractController {
 //                            mState.axisFractionY = 0f;
 //                            break;
 //                    }
+                    break;
+                case EVENT_STOP:
+                    gameActivity.finishActivity();
                     break;
 
                 // Buttons
