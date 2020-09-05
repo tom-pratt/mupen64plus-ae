@@ -812,7 +812,7 @@ public class GalleryActivity extends AppCompatActivity implements GameSidebarAct
                 launchGameActivity( item.romUri,
                         item.zipUri,
                         item.md5, item.crc, item.headerName,
-                        item.countryCode.getValue(), item.artPath, item.goodName, item.displayName, false );
+                        item.countryCode.getValue(), item.artPath, item.goodName, item.displayName, false, true );
                 break;
             case R.id.menuItem_start:
                 launchGameActivity( item.romUri,

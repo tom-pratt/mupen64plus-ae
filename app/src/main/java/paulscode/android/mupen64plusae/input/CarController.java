@@ -8,18 +8,10 @@ import android.os.RemoteException;
 import android.util.Log;
 import android.view.KeyEvent;
 
-import androidx.annotation.NonNull;
-
-import com.volvocars.autosar.ElementUtils;
-import com.volvocars.autosar.signals.elements.PinionSteerAg1_info;
-import com.volvocars.autosar.signals.elements.datatype.PinionSteerAg1Rec;
-
 import java.util.ArrayList;
 
 import paulscode.android.mupen64plusae.game.GameActivity;
 import paulscode.android.mupen64plusae.jni.CoreFragment;
-import paulscode.android.mupen64plusae.signalsmanager.SignalsManager;
-import paulscode.android.mupen64plusae.signalsmanager.SignalsManagerImpl;
 import vendor.aptiv.hardware.hisip.V1_0.HisipMessageHidl;
 import vendor.aptiv.hardware.hisip.V1_0.IHisip;
 import vendor.aptiv.hardware.hisip.V1_0.IHisipListener;
@@ -45,6 +37,7 @@ public class CarController extends AbstractController {
     private final IHisip hisip;
 
     private boolean isAButtonPressed = false;
+    private boolean goStraight = false;
 
     public CarController(GameActivity gameActivity, CoreFragment coreFragment, Context context) {
         super(coreFragment);
@@ -80,28 +73,26 @@ public class CarController extends AbstractController {
 
         @Override
         public void onMessageFromVip(HisipMessageHidl message) {
-            if (message.functionId == (byte)0x09) {
-                int rawValue = ((message.data.get(beginPos + 1) & ~signBitMask) * 256) + message.data.get(beginPos);
-                boolean negative = (message.data.get(beginPos + 1) & signBitMask) != 0;
-                double value = 0.0009765625 * rawValue;
-                if (negative) {
-                    value = value - 16;
-                }
-
-                float inputValue = (float) - root(2*value, 3) * 0.6f;
-
-                inputValue -= 0.05f;
-
-                if (Math.abs(inputValue) < 0.25f) {
-                    inputValue = 0;
-                } else {
-                    inputValue += (inputValue > 0 ? -1f : 1f) * 0.1f;
-                }
-
-
-                mState.axisFractionX = inputValue;
+            if (goStraight) {
+                mState.axisFractionX = 0f;
                 notifyChanged(false);
-                Log.d("Tom", (negative ? "negative " : "postitive") + " --- " + "rvalueRadios:" + inputValue);
+            } else {
+                if (message.functionId == (byte) 0x09) {
+                    int rawValue = ((message.data.get(beginPos + 1) & ~signBitMask) * 256) + message.data.get(beginPos);
+                    boolean negative = (message.data.get(beginPos + 1) & signBitMask) != 0;
+                    double value = 0.0009765625 * rawValue;
+                    if (negative) {
+                        value = value - 16;
+                    }
+
+                    float inputValue = (float) -root(2 * value, 3) * 0.5f;
+
+                    inputValue -= 0.1f;
+
+                    mState.axisFractionX = inputValue;
+                    notifyChanged(false);
+                    Log.d("Tom", (negative ? "negative " : "postitive") + " --- " + "rvalueRadios:" + inputValue);
+                }
             }
         }
     };
@@ -115,49 +106,23 @@ public class CarController extends AbstractController {
             switch (buttonCode) {
                 // Joy stick
                 case EVENT_LEFT:
-                    switch (buttonPressType) {
-                        case BUTTON_PRESS_TYPE_DOWN:
-                            mState.axisFractionX = -0.9f;
-                            break;
-                        case BUTTON_PRESS_TYPE_UP:
-                            mState.axisFractionX = 0f;
-                            break;
+                    if (buttonPressType.equals(BUTTON_PRESS_TYPE_UP)) {
+                        isAButtonPressed = !isAButtonPressed;
+                        mState.buttons[BTN_A] = isAButtonPressed;
                     }
                     break;
                 case EVENT_RIGHT:
-                    switch (buttonPressType) {
-                        case BUTTON_PRESS_TYPE_DOWN:
-                            mState.axisFractionX = 0.9f;
-                            break;
-                        case BUTTON_PRESS_TYPE_UP:
-                            mState.axisFractionX = 0f;
-                            break;
-                    }
+                    pressButton(buttonPressType, BTN_Z);
                     break;
                 case EVENT_UP:
                     pressButton(buttonPressType, BTN_A);
-//                    switch (buttonPressType) {
-//                        case BUTTON_PRESS_TYPE_DOWN:
-//                            mState.axisFractionY = 0.9f;
-//                            break;
-//                        case BUTTON_PRESS_TYPE_UP:
-//                            mState.axisFractionY = 0f;
-//                            break;
-//                    }
                     break;
                 case EVENT_DOWN:
-                    pressButton(buttonPressType, BTN_Z);
-//                    switch (buttonPressType) {
-//                        case BUTTON_PRESS_TYPE_DOWN:
-//                            mState.axisFractionY = -0.9f;
-//                            break;
-//                        case BUTTON_PRESS_TYPE_UP:
-//                            mState.axisFractionY = 0f;
-//                            break;
-//                    }
+                    pressButton(buttonPressType, BTN_A);
+                    goStraight = !buttonPressType.equals(BUTTON_PRESS_TYPE_UP);
                     break;
                 case EVENT_STOP:
-                    gameActivity.finishActivity();
+                    gameActivity.onExitRequested(true);
                     break;
 
                 // Buttons

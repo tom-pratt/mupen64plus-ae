@@ -23,6 +23,7 @@ package paulscode.android.mupen64plusae;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.ActivityOptions;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
@@ -228,31 +229,35 @@ public class ActivityHelper
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
         if (startInCluster) {
-            ServiceConnection serviceConnection = new ServiceConnection() {
-                @Override
-                public void onServiceConnected(ComponentName name, IBinder service) {
-                    IClusterRenderingService clusterService = IClusterRenderingService.Stub.asInterface(service);
-                    try {
-                        Bundle options = clusterService.getClusterActivityOptions();
-                        if (options != null) {
-                            Log.d("MARIOKART", "start game for result");
-                            context.startActivity(intent, options);
-                        }
-                    } catch (RemoteException e) {
-                        e.printStackTrace();
-                    }
-                }
+            ActivityOptions options = ActivityOptions.makeBasic();
+            options.setLaunchDisplayId(1);
+            context.startActivity(intent, options.toBundle());
 
-                @Override
-                public void onServiceDisconnected(ComponentName name) {
-
-                }
-            };
-
-            Intent clusterIntent = new Intent();
-            clusterIntent.setComponent(SERVICE_COMPONENT);
-            clusterIntent.setAction(LOCAL_BINDING_ACTION);
-            context.bindService(clusterIntent, serviceConnection, 0);
+//            ServiceConnection serviceConnection = new ServiceConnection() {
+//                @Override
+//                public void onServiceConnected(ComponentName name, IBinder service) {
+//                    IClusterRenderingService clusterService = IClusterRenderingService.Stub.asInterface(service);
+//                    try {
+//                        Bundle options = clusterService.getClusterActivityOptions();
+//                        if (options != null) {
+//                            Log.d("MARIOKART", "start game for result");
+//                            context.startActivity(intent, options);
+//                        }
+//                    } catch (RemoteException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//
+//                @Override
+//                public void onServiceDisconnected(ComponentName name) {
+//
+//                }
+//            };
+//
+//            Intent clusterIntent = new Intent();
+//            clusterIntent.setComponent(SERVICE_COMPONENT);
+//            clusterIntent.setAction(LOCAL_BINDING_ACTION);
+//            context.bindService(clusterIntent, serviceConnection, 0);
         } else {
             Log.d("MARIOKART", "start game ");
             context.startActivity(intent);
